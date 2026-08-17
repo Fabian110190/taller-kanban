@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel del día — Taller RL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F2EC;
+    --surface: #FFFFFF;
+    --ink: #2E2A26;
+    --ink-soft: #6B6459;
+    --line: #E7E0D3;
+    --accent: #C97B5B;
+
+    --ok: #3F8A62;
+    --ok-bg: #E1F2E8;
+    --warn: #B4763A;
+    --warn-bg: #FBEEDD;
+
+    --c-recepcion: #FDE2C8; --c-recepcion-ink: #7A4A1F;
+    --c-desarme: #FBD4D8; --c-desarme-ink: #7A2E36;
+    --c-diagnostico: #FBE8B8; --c-diagnostico-ink: #705A16;
+    --c-ph: #D7F0D3; --c-ph-ink: #2F5C3A;
+    --c-end: #CFEAE6; --c-end-ink: #205652;
+    --c-recup: #CFE0F5; --c-recup-ink: #2A4C74;
+    --c-terminacion: #DAD2F0; --c-terminacion-ink: #453275;
+    --c-expedicion: #F0D2E8; --c-expedicion-ink: #732F63;
+    --c-entregado: #E3E3E0; --c-entregado-ink: #55534C;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  h1, h2, h3 { font-family: 'Quicksand', 'Inter', sans-serif; }
+
+  /* ---------- Layout shell ---------- */
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .header-sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 20px;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: 'Quicksand', sans-serif;
+  }
+
+  .stat-num.ok-color { color: var(--ok); }
+  .stat-num.warn-color { color: var(--warn); }
+
+  .stat-label {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .body-split {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  /* ---------- Kanban zone ---------- */
+
+  .board-zone {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .column {
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    width: 250px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+  }
+
+  .column-header {
+    padding: 10px 12px;
+    border-radius: 14px 14px 0 0;
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .column-count {
+    background: rgba(255,255,255,0.55);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 11px;
+  }
+
+  .column-cards {
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .column-empty {
+    padding: 16px 10px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 12px;
+    opacity: 0.6;
+  }
+
+  /* ---------- Card ---------- */
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 10px;
+    background: var(--bg);
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .card-ot {
+    font-weight: 700;
+    font-size: 12.5px;
+  }
+
+  .badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .badge.ok {
+    background: var(--ok-bg);
+    color: var(--ok);
+  }
+
+  .badge.warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+
+  .card-detalle {
+    font-size: 11.5px;
+    color: var(--ink);
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+
+  .card-cliente {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+  }
+
+  .card-tarea {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+    font-style: italic;
+  }
+
+  /* ---------- Feed sidebar ---------- */
+
+  .feed-zone {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-left: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .feed-header {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .feed-title {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .feed-sub {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .feed-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 14px;
+  }
+
+  .feed-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .feed-item:last-child { border-bottom: none; }
+
+  .feed-time {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .feed-main {
+    font-size: 12.5px;
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  .feed-ot {
+    font-weight: 700;
+  }
+
+  .feed-campo {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 2px;
+  }
+
+  .feed-vals {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .feed-empty {
+    padding: 30px 14px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  /* ---------- Scrollbars ---------- */
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #D8D0C0; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  .state-panel {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div>
+      <div class="header-title">Panel del día — Taller RL</div>
+      <div class="header-sub" id="headerSub">Cargando…</div>
+    </div>
+    <div class="header-stats">
+      <div class="stat">
+        <div class="stat-num" id="statTotal">–</div>
+        <div class="stat-label">OTs hoy</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num ok-color" id="statUpdated">–</div>
+        <div class="stat-label">Actualizadas</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num warn-color" id="statPending">–</div>
+        <div class="stat-label">Sin novedades</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="body-split">
+    <div class="board-zone" id="boardZone">
+      <div class="state-panel">Cargando el panel…</div>
+    </div>
+    <div class="feed-zone">
+      <div class="feed-header">
+        <div class="feed-title">Actualizaciones de hoy</div>
+        <div class="feed-sub" id="feedSub">–</div>
+      </div>
+      <div class="feed-list" id="feedList">
+        <div class="feed-empty">Cargando…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6c4W7SofbiqOo01ZNfOz1QQgdnvg2jd_BkuwPGDAvgbedQdqrtiEroQjXeryfbztN/exec";
+  const AUTO_REFRESH_MS = 90000; // 90 segundos
+
+  const SECTORES = [
+    { key: "RECEPCION Y ADMIN", css: "recepcion" },
+    { key: "DESARME", css: "desarme" },
+    { key: "DIAGNOSTICO Y ARMADO", css: "diagnostico" },
+    { key: "PH", css: "ph" },
+    { key: "END", css: "end" },
+    { key: "RECUP COMPONENTES", css: "recup" },
+    { key: "TERMINACION", css: "terminacion" },
+    { key: "EXPEDICION", css: "expedicion" },
+    { key: "ENTREGADO", css: "entregado" }
+  ];
+
+  const boardZone = document.getElementById("boardZone");
+  const feedList = document.getElementById("feedList");
+  const headerSub = document.getElementById("headerSub");
+  const feedSub = document.getElementById("feedSub");
+  const statTotal = document.getElementById("statTotal");
+  const statUpdated = document.getElementById("statUpdated");
+  const statPending = document.getElementById("statPending");
+
+  function escapeHtml(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function normalizeSector(raw) {
+    const found = SECTORES.find(s => s.key === String(raw || "").trim().toUpperCase());
+    return found ? found.key : null;
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, { method: "GET" });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Respuesta inválida");
+      renderBoard(json.items || []);
+      renderFeed(json.updates || []);
+      headerSub.textContent = "Actualizado a las " + json.generatedAt.split(" ")[1] + " · próxima actualización automática en 90s";
+    } catch (err) {
+      boardZone.innerHTML = `<div class="state-panel">No se pudo conectar. Reintentando en 90s…<br><span style="font-size:11px; opacity:0.7;">${escapeHtml(err.message)}</span></div>`;
+    }
+  }
+
+  function renderBoard(items) {
+    if (items.length === 0) {
+      boardZone.innerHTML = `<div class="state-panel">No hay OTs planificadas para hoy.</div>`;
+      statTotal.textContent = "0";
+      statUpdated.textContent = "0";
+      statPending.textContent = "0";
+      return;
+    }
+
+    const updatedCount = items.filter(i => i.actualizadoHoy).length;
+    statTotal.textContent = items.length;
+    statUpdated.textContent = updatedCount;
+    statPending.textContent = items.length - updatedCount;
+
+    const groups = {};
+    SECTORES.forEach(s => groups[s.key] = []);
+    const sinSector = [];
+
+    items.forEach(item => {
+      const sector = normalizeSector(item.sector);
+      if (sector) groups[sector].push(item);
+      else sinSector.push(item);
+    });
+
+    let html = "";
+
+    SECTORES.forEach(s => {
+      const list = groups[s.key];
+      html += `
+        <div class="column">
+          <div class="column-header" style="background:var(--c-${s.css}); color:var(--c-${s.css}-ink);">
+            <span>${escapeHtml(s.key)}</span>
+            <span class="column-count">${list.length}</span>
+          </div>
+          <div class="column-cards">
+            ${list.length === 0 ? '<div class="column-empty">Sin OTs</div>' : list.map(cardHtml).join("")}
+          </div>
+        </div>
+      `;
+    });
+
+    if (sinSector.length > 0) {
+      html += `
+        <div class="column">
+          <div class="column-header" style="background:#EEEAE3; color:#6B6459;">
+            <span>SIN SECTOR</span>
+            <span class="column-count">${sinSector.length}</span>
+          </div>
+          <div class="column-cards">
+            ${sinSector.map(cardHtml).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    boardZone.innerHTML = html;
+  }
+
+  function cardHtml(item) {
+    const badge = item.actualizadoHoy
+      ? `<span class="badge ok">✅ Hoy</span>`
+      : `<span class="badge warn">⚠️ Sin novedades</span>`;
+    return `
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ot">OT ${escapeHtml(item.ot)}</span>
+          ${badge}
+        </div>
+        <div class="card-detalle">${escapeHtml(item.detalle || "—")}</div>
+        <div class="card-cliente">${escapeHtml(item.cliente || "")}</div>
+        ${item.tareaARealizar ? `<div class="card-tarea">${escapeHtml(item.tareaARealizar)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function renderFeed(updates) {
+    if (updates.length === 0) {
+      feedList.innerHTML = `<div class="feed-empty">Todavía no hay actualizaciones cargadas hoy.</div>`;
+      feedSub.textContent = "0 movimientos";
+      return;
+    }
+
+    feedSub.textContent = updates.length + " movimiento" + (updates.length === 1 ? "" : "s");
+
+    feedList.innerHTML = updates.map(u => `
+      <div class="feed-item">
+        <div class="feed-time">${escapeHtml(u.fechaHora.split(" ")[1] || u.fechaHora)}</div>
+        <div class="feed-main"><span class="feed-ot">OT ${escapeHtml(u.ot)}</span></div>
+        <div class="feed-campo">${escapeHtml(u.campo)}</div>
+        ${u.campo !== "OBSERVACION" ? `<div class="feed-vals">${escapeHtml(u.valorAnterior || "—")} → ${escapeHtml(u.valorNuevo || "—")}</div>` : `<div class="feed-vals">${escapeHtml(u.valorNuevo || "")}</div>`}
+      </div>
+    `).join("");
+  }
+
+  loadData();
+  setInterval(loadData, AUTO_REFRESH_MS);
+</script>
+
+</body>
+</html>
