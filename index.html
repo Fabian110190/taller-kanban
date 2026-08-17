@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ronda del día — Taller RL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F4;
+    --surface: #FFFFFF;
+    --ink: #2E2A26;
+    --ink-soft: #6B6459;
+    --line: #ECE6DC;
+    --accent: #C97B5B;
+    --accent-ink: #FFFFFF;
+    --ok: #4C8C6B;
+    --ok-bg: #E4F3EA;
+    --err: #B4544A;
+    --err-bg: #FBE9E7;
+
+    --c-recepcion: #FDE2C8;
+    --c-recepcion-ink: #7A4A1F;
+    --c-desarme: #FBD4D8;
+    --c-desarme-ink: #7A2E36;
+    --c-diagnostico: #FBE8B8;
+    --c-diagnostico-ink: #705A16;
+    --c-ph: #D7F0D3;
+    --c-ph-ink: #2F5C3A;
+    --c-end: #CFEAE6;
+    --c-end-ink: #205652;
+    --c-recup: #CFE0F5;
+    --c-recup-ink: #2A4C74;
+    --c-terminacion: #DAD2F0;
+    --c-terminacion-ink: #453275;
+    --c-expedicion: #F0D2E8;
+    --c-expedicion-ink: #732F63;
+    --c-entregado: #E3E3E0;
+    --c-entregado-ink: #55534C;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Quicksand', 'Inter', sans-serif;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  /* ---------- Header ---------- */
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px 12px;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .header-title {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .header-sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 999px;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  .refresh-btn:active {
+    transform: scale(0.96);
+  }
+
+  .refresh-btn.loading .refresh-icon {
+    animation: spin 0.9s linear infinite;
+  }
+
+  .refresh-icon {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ---------- Layout ---------- */
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 12px 60px;
+  }
+
+  .state-panel {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+
+  .state-panel .big-emoji {
+    font-size: 40px;
+    margin-bottom: 10px;
+  }
+
+  .state-panel h3 {
+    color: var(--ink);
+    font-size: 17px;
+    margin: 0 0 6px;
+  }
+
+  .state-panel p {
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .error-box {
+    background: var(--err-bg);
+    color: var(--err);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  /* ---------- Sector group ---------- */
+
+  .sector-group {
+    margin-bottom: 18px;
+  }
+
+  .sector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14.5px;
+    letter-spacing: 0.01em;
+  }
+
+  .sector-count {
+    font-size: 12.5px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.55);
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+
+  .sector-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  /* ---------- Card ---------- */
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: box-shadow 0.15s ease;
+  }
+
+  .card.open {
+    box-shadow: 0 4px 16px rgba(46, 42, 38, 0.07);
+  }
+
+  .card-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .card-summary-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .card-ot-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+
+  .card-ot {
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+
+  .card-rrl {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .card-detalle {
+    font-size: 13.5px;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-cliente {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .card-chevron {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--ink-soft);
+    transition: transform 0.2s ease;
+  }
+
+  .card.open .card-chevron {
+    transform: rotate(180deg);
+  }
+
+  .card-body {
+    display: none;
+    padding: 4px 14px 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .card.open .card-body {
+    display: block;
+  }
+
+  .field {
+    margin-top: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  select, textarea {
+    width: 100%;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236B6459' stroke-width='2'><path d='M5 8l5 5 5-5'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
+  }
+
+  select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  textarea {
+    min-height: 64px;
+    resize: vertical;
+  }
+
+  .obs-original {
+    font-size: 13px;
+    color: var(--ink-soft);
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 10px 12px;
+    line-height: 1.5;
+    max-height: 90px;
+    overflow-y: auto;
+  }
+
+  .obs-original.empty {
+    font-style: italic;
+    opacity: 0.7;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .save-btn {
+    flex: 1;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  .save-btn:active {
+    transform: scale(0.98);
+  }
+
+  .save-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .save-status {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .save-status.ok { color: var(--ok); }
+  .save-status.err { color: var(--err); }
+
+  .fecha-entrega {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  @media (min-width: 600px) {
+    main { padding-top: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div>
+      <div class="header-title">Ronda del día</div>
+      <div class="header-sub" id="headerSub">Taller RL — cargando…</div>
+    </div>
+    <button class="refresh-btn" id="refreshBtn">
+      <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span id="refreshLabel">Actualizar</span>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+  <div class="state-panel" id="initialState">
+    <div class="big-emoji">🔧</div>
+    <h3>Cargando la ronda de hoy…</h3>
+    <p>Trayendo los trabajos planificados desde la planilla.</p>
+  </div>
+</main>
+
+<script>
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5F2Q_859ChO0h7IwV89xDxV5J4Umk7qNjhNztrYrBWljizmEr6mw4QRyBKKb1cwgG/exec";
+
+  const SECTORES = [
+    { key: "RECEPCION Y ADMIN", css: "recepcion" },
+    { key: "DESARME", css: "desarme" },
+    { key: "DIAGNOSTICO Y ARMADO", css: "diagnostico" },
+    { key: "PH", css: "ph" },
+    { key: "END", css: "end" },
+    { key: "RECUP COMPONENTES", css: "recup" },
+    { key: "TERMINACION", css: "terminacion" },
+    { key: "EXPEDICION", css: "expedicion" },
+    { key: "ENTREGADO", css: "entregado" }
+  ];
+
+  const TAREAS = [
+    "RECEPCION-INSP. VISUAL", "DIAGNOSTICO", "DESARME", "ARMADO", "END",
+    "ENGRASE", "PH INT", "PH CIE", "LAVADO", "ARENADO", "PINTURA",
+    "PRECINTADO", "RECUP. COMPONENTES", "FINALIZADO"
+  ];
+
+  const mainEl = document.getElementById("main");
+  const headerSub = document.getElementById("headerSub");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const refreshLabel = document.getElementById("refreshLabel");
+
+  let items = [];
+  let openCardKey = null;
+
+  function normalizeSector(raw) {
+    const found = SECTORES.find(s => s.key === String(raw || "").trim().toUpperCase());
+    return found ? found.key : null;
+  }
+
+  function escapeHtml(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function loadData() {
+    setRefreshing(true);
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, { method: "GET" });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Respuesta inválida del servidor");
+      items = json.data || [];
+      render();
+      const now = new Date();
+      headerSub.textContent = "Taller RL — actualizado " + now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    } catch (err) {
+      renderError(err.message);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  function setRefreshing(state) {
+    refreshBtn.disabled = state;
+    refreshBtn.classList.toggle("loading", state);
+    refreshLabel.textContent = state ? "Actualizando…" : "Actualizar";
+  }
+
+  function renderError(msg) {
+    mainEl.innerHTML = `
+      <div class="error-box">
+        No se pudo cargar la información. Revisá tu conexión e intentá de nuevo.<br>
+        <span style="opacity:0.7; font-size:12px;">Detalle: ${escapeHtml(msg)}</span>
+      </div>
+      <div class="state-panel">
+        <div class="big-emoji">📡</div>
+        <h3>Sin datos por ahora</h3>
+        <p>Tocá "Actualizar" arriba para reintentar.</p>
+      </div>
+    `;
+  }
+
+  function render() {
+    if (items.length === 0) {
+      mainEl.innerHTML = `
+        <div class="state-panel">
+          <div class="big-emoji">✅</div>
+          <h3>No hay trabajos planificados para hoy</h3>
+          <p>Cuando haya OTs con fecha de planificación de hoy, van a aparecer acá.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const groups = {};
+    SECTORES.forEach(s => groups[s.key] = []);
+    const sinSector = [];
+
+    items.forEach(item => {
+      const sector = normalizeSector(item.sector);
+      if (sector) groups[sector].push(item);
+      else sinSector.push(item);
+    });
+
+    let html = "";
+
+    SECTORES.forEach(s => {
+      const list = groups[s.key];
+      if (list.length === 0) return;
+      html += `
+        <div class="sector-group">
+          <div class="sector-header" style="background:var(--c-${s.css}); color:var(--c-${s.css}-ink);">
+            <span>${escapeHtml(s.key)}</span>
+            <span class="sector-count">${list.length}</span>
+          </div>
+          <div class="sector-cards">
+            ${list.map(cardHtml).join("")}
+          </div>
+        </div>
+      `;
+    });
+
+    if (sinSector.length > 0) {
+      html += `
+        <div class="sector-group">
+          <div class="sector-header" style="background:#EEEAE3; color:#6B6459;">
+            <span>SIN SECTOR ASIGNADO</span>
+            <span class="sector-count">${sinSector.length}</span>
+          </div>
+          <div class="sector-cards">
+            ${sinSector.map(cardHtml).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    mainEl.innerHTML = html;
+    attachCardHandlers();
+  }
+
+  function cardHtml(item) {
+    const key = item.ot;
+    const isOpen = openCardKey === key;
+    const sectorOptions = SECTORES.map(s =>
+      `<option value="${escapeHtml(s.key)}" ${normalizeSector(item.sector) === s.key ? "selected" : ""}>${escapeHtml(s.key)}</option>`
+    ).join("");
+    const tareaOptions = TAREAS.map(t =>
+      `<option value="${escapeHtml(t)}" ${String(item.tareaARealizar || "").trim().toUpperCase() === t ? "selected" : ""}>${escapeHtml(t)}</option>`
+    ).join("");
+    const obsOriginal = item.observacion && String(item.observacion).trim() !== ""
+      ? escapeHtml(item.observacion)
+      : `<span class="obs-original empty">Sin observaciones cargadas</span>`;
+
+    return `
+      <div class="card ${isOpen ? "open" : ""}" data-ot="${escapeHtml(key)}">
+        <div class="card-summary" data-toggle="${escapeHtml(key)}">
+          <div class="card-summary-main">
+            <div class="card-ot-row">
+              <span class="card-ot">OT ${escapeHtml(item.ot)}</span>
+              ${item.rrl ? `<span class="card-rrl">RRL ${escapeHtml(item.rrl)}</span>` : ""}
+            </div>
+            <div class="card-detalle">${escapeHtml(item.detalle || "—")}</div>
+            <div class="card-cliente">${escapeHtml(item.cliente || "")}${item.tareaARealizar ? " · " + escapeHtml(item.tareaARealizar) : ""}</div>
+          </div>
+          <svg class="card-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label>Sector</label>
+            <select class="sel-sector">${sectorOptions}</select>
+          </div>
+          <div class="field">
+            <label>Tarea a realizar</label>
+            <select class="sel-tarea">${tareaOptions}</select>
+          </div>
+          <div class="field">
+            <label>Observación original</label>
+            <div class="obs-original">${obsOriginal}</div>
+          </div>
+          <div class="field">
+            <label>Agregar observación de hoy</label>
+            <textarea class="txt-obs-nueva" placeholder="Ej: falta repuesto, se avisó a compras…"></textarea>
+          </div>
+          ${item.fechaEntrega ? `<div class="fecha-entrega">Entrega acordada: ${escapeHtml(item.fechaEntrega)}</div>` : ""}
+          <div class="card-footer">
+            <button class="save-btn">Guardar cambios</button>
+            <span class="save-status"></span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function attachCardHandlers() {
+    document.querySelectorAll("[data-toggle]").forEach(el => {
+      el.addEventListener("click", () => {
+        const key = el.getAttribute("data-toggle");
+        openCardKey = openCardKey === key ? null : key;
+        render();
+      });
+    });
+
+    document.querySelectorAll(".card").forEach(cardEl => {
+      const ot = cardEl.getAttribute("data-ot");
+      const saveBtn = cardEl.querySelector(".save-btn");
+      if (!saveBtn) return;
+      saveBtn.addEventListener("click", () => saveCard(ot, cardEl, saveBtn));
+    });
+  }
+
+  async function saveCard(ot, cardEl, saveBtn) {
+    const item = items.find(i => String(i.ot) === String(ot));
+    if (!item) return;
+
+    const sectorSel = cardEl.querySelector(".sel-sector").value;
+    const tareaSel = cardEl.querySelector(".sel-tarea").value;
+    const obsNueva = cardEl.querySelector(".txt-obs-nueva").value.trim();
+    const statusEl = cardEl.querySelector(".save-status");
+
+    const sectorActual = normalizeSector(item.sector);
+    const tareaActual = String(item.tareaARealizar || "").trim().toUpperCase();
+
+    const payload = { ot: item.ot };
+    let hayCambios = false;
+
+    if (sectorSel !== sectorActual) { payload.sector = sectorSel; hayCambios = true; }
+    if (tareaSel !== tareaActual) { payload.tareaARealizar = tareaSel; hayCambios = true; }
+    if (obsNueva !== "") { payload.observacionNueva = obsNueva; hayCambios = true; }
+
+    if (!hayCambios) {
+      statusEl.textContent = "Sin cambios para guardar";
+      statusEl.className = "save-status";
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Guardando…";
+    statusEl.textContent = "";
+    statusEl.className = "save-status";
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Error al guardar");
+
+      if (payload.sector) item.sector = payload.sector;
+      if (payload.tareaARealizar) item.tareaARealizar = payload.tareaARealizar;
+      if (payload.observacionNueva) {
+        const stamp = new Date().toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+        item.observacion = item.observacion
+          ? item.observacion + " | [" + stamp + "] " + payload.observacionNueva
+          : "[" + stamp + "] " + payload.observacionNueva;
+      }
+
+      statusEl.textContent = "✓ Guardado";
+      statusEl.className = "save-status ok";
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Guardar cambios";
+
+      setTimeout(() => render(), 500);
+    } catch (err) {
+      statusEl.textContent = "Error al guardar";
+      statusEl.className = "save-status err";
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Guardar cambios";
+    }
+  }
+
+  refreshBtn.addEventListener("click", loadData);
+  loadData();
+</script>
+
+</body>
+</html>
