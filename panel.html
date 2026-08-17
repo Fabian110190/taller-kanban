@@ -110,20 +110,20 @@
 
   .board-zone {
     flex: 1;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
     padding: 18px;
     display: flex;
-    gap: 14px;
-    align-items: flex-start;
+    gap: 12px;
+    align-items: stretch;
+    min-width: 0;
   }
 
   .column {
     background: var(--surface);
     border-radius: 14px;
     border: 1px solid var(--line);
-    width: 250px;
-    flex-shrink: 0;
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     max-height: 100%;
@@ -133,11 +133,13 @@
     padding: 10px 12px;
     border-radius: 14px 14px 0 0;
     font-weight: 700;
-    font-size: 12.5px;
-    letter-spacing: 0.02em;
+    font-size: 11.5px;
+    letter-spacing: 0.01em;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.3;
   }
 
   .column-count {
@@ -362,17 +364,22 @@
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6c4W7SofbiqOo01ZNfOz1QQgdnvg2jd_BkuwPGDAvgbedQdqrtiEroQjXeryfbztN/exec";
   const AUTO_REFRESH_MS = 90000; // 90 segundos
 
-  const SECTORES = [
-    { key: "RECEPCION Y ADMIN", css: "recepcion" },
-    { key: "DESARME", css: "desarme" },
-    { key: "DIAGNOSTICO Y ARMADO", css: "diagnostico" },
-    { key: "PH", css: "ph" },
-    { key: "END", css: "end" },
-    { key: "RECUP COMPONENTES", css: "recup" },
-    { key: "TERMINACION", css: "terminacion" },
-    { key: "EXPEDICION", css: "expedicion" },
-    { key: "ENTREGADO", css: "entregado" }
+  // RECEPCION Y ADMIN se omite del tablero a pedido.
+  // DESARME y DIAGNOSTICO Y ARMADO se unifican en una sola columna.
+  const COLUMNAS = [
+    { label: "DESARME / DIAG. Y ARMADO", css: "desarme", match: ["DESARME", "DIAGNOSTICO Y ARMADO"] },
+    { label: "PH", css: "ph", match: ["PH"] },
+    { label: "END", css: "end", match: ["END"] },
+    { label: "RECUP COMPONENTES", css: "recup", match: ["RECUP COMPONENTES"] },
+    { label: "TERMINACION", css: "terminacion", match: ["TERMINACION"] },
+    { label: "EXPEDICION", css: "expedicion", match: ["EXPEDICION"] },
+    { label: "ENTREGADO", css: "entregado", match: ["ENTREGADO"] }
   ];
+
+  function findColumn(rawSector) {
+    const norm = String(rawSector || "").trim().toUpperCase();
+    return COLUMNAS.find(c => c.match.indexOf(norm) !== -1) || null;
+  }
 
   const boardZone = document.getElementById("boardZone");
   const feedList = document.getElementById("feedList");
@@ -386,11 +393,6 @@
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
-  }
-
-  function normalizeSector(raw) {
-    const found = SECTORES.find(s => s.key === String(raw || "").trim().toUpperCase());
-    return found ? found.key : null;
   }
 
   async function loadData() {
@@ -421,23 +423,22 @@
     statPending.textContent = items.length - updatedCount;
 
     const groups = {};
-    SECTORES.forEach(s => groups[s.key] = []);
-    const sinSector = [];
+    COLUMNAS.forEach(c => groups[c.label] = []);
 
     items.forEach(item => {
-      const sector = normalizeSector(item.sector);
-      if (sector) groups[sector].push(item);
-      else sinSector.push(item);
+      const col = findColumn(item.sector);
+      if (col) groups[col.label].push(item);
+      // Los que no matchean ninguna columna (ej. RECEPCION Y ADMIN) quedan fuera del tablero a propósito.
     });
 
     let html = "";
 
-    SECTORES.forEach(s => {
-      const list = groups[s.key];
+    COLUMNAS.forEach(c => {
+      const list = groups[c.label];
       html += `
         <div class="column">
-          <div class="column-header" style="background:var(--c-${s.css}); color:var(--c-${s.css}-ink);">
-            <span>${escapeHtml(s.key)}</span>
+          <div class="column-header" style="background:var(--c-${c.css}); color:var(--c-${c.css}-ink);">
+            <span>${escapeHtml(c.label)}</span>
             <span class="column-count">${list.length}</span>
           </div>
           <div class="column-cards">
@@ -446,20 +447,6 @@
         </div>
       `;
     });
-
-    if (sinSector.length > 0) {
-      html += `
-        <div class="column">
-          <div class="column-header" style="background:#EEEAE3; color:#6B6459;">
-            <span>SIN SECTOR</span>
-            <span class="column-count">${sinSector.length}</span>
-          </div>
-          <div class="column-cards">
-            ${sinSector.map(cardHtml).join("")}
-          </div>
-        </div>
-      `;
-    }
 
     boardZone.innerHTML = html;
   }
