@@ -110,7 +110,8 @@
 
   .board-zone {
     flex: 1;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     padding: 18px;
     display: flex;
     gap: 12px;
@@ -123,23 +124,29 @@
     border-radius: 14px;
     border: 1px solid var(--line);
     flex: 1 1 0;
-    min-width: 0;
+    min-width: 175px;
+    max-width: 260px;
     display: flex;
     flex-direction: column;
     max-height: 100%;
+    overflow: hidden;
   }
 
   .column-header {
-    padding: 10px 12px;
+    padding: 11px 12px;
     border-radius: 14px 14px 0 0;
     font-weight: 700;
     font-size: 11.5px;
     letter-spacing: 0.01em;
+    line-height: 1.35;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    flex-direction: column;
     gap: 6px;
-    line-height: 1.3;
+  }
+
+  .column-header-top {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .column-count {
@@ -152,6 +159,7 @@
   .column-cards {
     padding: 10px;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -170,15 +178,16 @@
   .card {
     border: 1px solid var(--line);
     border-radius: 10px;
-    padding: 9px 10px;
+    padding: 10px 11px;
     background: var(--bg);
+    min-width: 0;
   }
 
   .card-top {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
   }
 
   .card-ot {
@@ -187,9 +196,9 @@
   }
 
   .badge {
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 2px 6px;
+    padding: 2px 7px;
     border-radius: 999px;
     white-space: nowrap;
     flex-shrink: 0;
@@ -208,21 +217,29 @@
   .card-detalle {
     font-size: 11.5px;
     color: var(--ink);
-    margin-top: 4px;
-    line-height: 1.35;
+    margin-top: 5px;
+    line-height: 1.4;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .card-cliente {
     font-size: 10.5px;
     color: var(--ink-soft);
-    margin-top: 3px;
+    margin-top: 4px;
+    overflow-wrap: break-word;
   }
 
   .card-tarea {
-    font-size: 10.5px;
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
     color: var(--ink-soft);
-    margin-top: 3px;
-    font-style: italic;
+    margin-top: 6px;
+    padding: 2px 7px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
   }
 
   /* ---------- Feed sidebar ---------- */
@@ -367,7 +384,7 @@
   // RECEPCION Y ADMIN se omite del tablero a pedido.
   // DESARME y DIAGNOSTICO Y ARMADO se unifican en una sola columna.
   const COLUMNAS = [
-    { label: "DESARME / DIAG. Y ARMADO", css: "desarme", match: ["DESARME", "DIAGNOSTICO Y ARMADO"] },
+    { label: "DESARME, DIAGNOSTICO Y ARMADO", css: "desarme", match: ["DESARME, DIAGNOSTICO Y ARMADO"] },
     { label: "PH", css: "ph", match: ["PH"] },
     { label: "END", css: "end", match: ["END"] },
     { label: "RECUP COMPONENTES", css: "recup", match: ["RECUP COMPONENTES"] },
@@ -438,8 +455,8 @@
       html += `
         <div class="column">
           <div class="column-header" style="background:var(--c-${c.css}); color:var(--c-${c.css}-ink);">
+            <div class="column-header-top"><span class="column-count">${list.length}</span></div>
             <span>${escapeHtml(c.label)}</span>
-            <span class="column-count">${list.length}</span>
           </div>
           <div class="column-cards">
             ${list.length === 0 ? '<div class="column-empty">Sin OTs</div>' : list.map(cardHtml).join("")}
@@ -453,8 +470,8 @@
 
   function cardHtml(item) {
     const badge = item.actualizadoHoy
-      ? `<span class="badge ok">✅ Hoy</span>`
-      : `<span class="badge warn">⚠️ Sin novedades</span>`;
+      ? `<span class="badge ok">✓ Actualizado</span>`
+      : `<span class="badge warn">⚠ Pendiente</span>`;
     return `
       <div class="card">
         <div class="card-top">
