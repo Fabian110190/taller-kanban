@@ -106,6 +106,159 @@
     min-height: 0;
   }
 
+  .tab-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 24px 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    padding: 9px 16px;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+  }
+
+  .tab-btn.active {
+    color: var(--accent);
+    background: var(--bg);
+  }
+
+  /* ---------- Entregas (tabla) ---------- */
+
+  .backlog-zone {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 24px;
+    min-width: 0;
+  }
+
+  .backlog-section-title {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .backlog-section-title.expedicion {
+    color: var(--c-expedicion-ink);
+  }
+
+  .backlog-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 26px;
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+
+  .backlog-table th {
+    text-align: left;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    padding: 9px 12px;
+    background: #F1ECE2;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .backlog-table td {
+    padding: 10px 12px;
+    font-size: 12.5px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  .backlog-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .backlog-table tr.expedicion-row {
+    background: #FDF6FB;
+  }
+
+  .bk-ot {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .bk-detalle {
+    font-weight: 600;
+  }
+
+  .bk-cliente {
+    color: var(--ink-soft);
+    font-size: 11.5px;
+    margin-top: 2px;
+  }
+
+  .sector-pill {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .planif-tag {
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  .planif-tag.missing {
+    color: var(--err, #B4544A);
+    font-weight: 700;
+    background: #FBE9E7;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .entrega-tag {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  .entrega-tag.vencido {
+    background: #FBE2DF;
+    color: #A0392F;
+  }
+
+  .entrega-tag.proximo {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+
+  .entrega-tag.normal {
+    background: #EFEBE2;
+    color: var(--ink-soft);
+  }
+
+  .entrega-tag.sinFecha {
+    background: transparent;
+    color: var(--ink-soft);
+    font-style: italic;
+    font-weight: 500;
+  }
+
   /* ---------- Kanban zone ---------- */
 
   .board-zone {
@@ -345,27 +498,33 @@
       <div class="header-title">Panel del día — Taller RL</div>
       <div class="header-sub" id="headerSub">Cargando…</div>
     </div>
-    <div class="header-stats">
+    <div class="header-stats" id="headerStats">
       <div class="stat">
         <div class="stat-num" id="statTotal">–</div>
-        <div class="stat-label">OTs hoy</div>
+        <div class="stat-label" id="statTotalLabel">OTs hoy</div>
       </div>
       <div class="stat">
         <div class="stat-num ok-color" id="statUpdated">–</div>
-        <div class="stat-label">Actualizadas</div>
+        <div class="stat-label" id="statUpdatedLabel">Actualizadas</div>
       </div>
       <div class="stat">
         <div class="stat-num warn-color" id="statPending">–</div>
-        <div class="stat-label">Sin novedades</div>
+        <div class="stat-label" id="statPendingLabel">Sin novedades</div>
       </div>
     </div>
   </header>
 
-  <div class="body-split">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="ronda">Ronda de hoy</button>
+    <button class="tab-btn" data-tab="entregas">Entregas</button>
+  </div>
+
+  <div class="body-split" id="bodySplit">
     <div class="board-zone" id="boardZone">
       <div class="state-panel">Cargando el panel…</div>
     </div>
-    <div class="feed-zone">
+    <div class="backlog-zone" id="backlogZone" style="display:none;"></div>
+    <div class="feed-zone" id="feedZone">
       <div class="feed-header">
         <div class="feed-title">Actualizaciones de hoy</div>
         <div class="feed-sub" id="feedSub">–</div>
@@ -397,12 +556,31 @@
   }
 
   const boardZone = document.getElementById("boardZone");
+  const backlogZone = document.getElementById("backlogZone");
+  const feedZone = document.getElementById("feedZone");
   const feedList = document.getElementById("feedList");
   const headerSub = document.getElementById("headerSub");
   const feedSub = document.getElementById("feedSub");
   const statTotal = document.getElementById("statTotal");
   const statUpdated = document.getElementById("statUpdated");
   const statPending = document.getElementById("statPending");
+  const statTotalLabel = document.getElementById("statTotalLabel");
+  const statUpdatedLabel = document.getElementById("statUpdatedLabel");
+  const statPendingLabel = document.getElementById("statPendingLabel");
+
+  let activeTab = "ronda";
+  let lastPayload = null;
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeTab = btn.getAttribute("data-tab");
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b === btn));
+      boardZone.style.display = activeTab === "ronda" ? "flex" : "none";
+      feedZone.style.display = activeTab === "ronda" ? "flex" : "none";
+      backlogZone.style.display = activeTab === "entregas" ? "block" : "none";
+      if (lastPayload) renderStats();
+    });
+  });
 
   function escapeHtml(str) {
     return String(str == null ? "" : str)
@@ -415,27 +593,46 @@
       const res = await fetch(APPS_SCRIPT_URL, { method: "GET" });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || "Respuesta inválida");
+      lastPayload = json;
       renderBoard(json.items || []);
       renderFeed(json.updates || []);
+      renderBacklog(json.backlog || []);
+      renderStats();
       headerSub.textContent = "Actualizado a las " + json.generatedAt.split(" ")[1] + " · próxima actualización automática en 90s";
     } catch (err) {
       boardZone.innerHTML = `<div class="state-panel">No se pudo conectar. Reintentando en 90s…<br><span style="font-size:11px; opacity:0.7;">${escapeHtml(err.message)}</span></div>`;
     }
   }
 
+  function renderStats() {
+    if (!lastPayload) return;
+    if (activeTab === "ronda") {
+      const items = lastPayload.items || [];
+      const updatedCount = items.filter(i => i.actualizadoHoy).length;
+      statTotalLabel.textContent = "OTs hoy";
+      statUpdatedLabel.textContent = "Actualizadas";
+      statPendingLabel.textContent = "Sin novedades";
+      statTotal.textContent = items.length;
+      statUpdated.textContent = updatedCount;
+      statPending.textContent = items.length - updatedCount;
+    } else {
+      const backlog = lastPayload.backlog || [];
+      const vencidas = backlog.filter(b => b.urgencia === "vencido").length;
+      const proximas = backlog.filter(b => b.urgencia === "proximo").length;
+      statTotalLabel.textContent = "OTs pendientes";
+      statUpdatedLabel.textContent = "Próximas a vencer";
+      statPendingLabel.textContent = "Vencidas";
+      statTotal.textContent = backlog.length;
+      statUpdated.textContent = proximas;
+      statPending.textContent = vencidas;
+    }
+  }
+
   function renderBoard(items) {
     if (items.length === 0) {
       boardZone.innerHTML = `<div class="state-panel">No hay OTs planificadas para hoy.</div>`;
-      statTotal.textContent = "0";
-      statUpdated.textContent = "0";
-      statPending.textContent = "0";
       return;
     }
-
-    const updatedCount = items.filter(i => i.actualizadoHoy).length;
-    statTotal.textContent = items.length;
-    statUpdated.textContent = updatedCount;
-    statPending.textContent = items.length - updatedCount;
 
     const groups = {};
     COLUMNAS.forEach(c => groups[c.label] = []);
@@ -481,6 +678,97 @@
         ${item.tareaARealizar ? `<div class="card-tarea">${escapeHtml(item.tareaARealizar)}</div>` : ""}
       </div>
     `;
+  }
+
+  const SECTOR_CSS_MAP = {
+    "RECEPCION Y ADMIN": "recepcion",
+    "DESARME, DIAGNOSTICO Y ARMADO": "desarme",
+    "PH": "ph",
+    "END": "end",
+    "RECUP COMPONENTES": "recup",
+    "TERMINACION": "terminacion",
+    "EXPEDICION": "expedicion",
+    "ENTREGADO": "entregado"
+  };
+
+  function sectorPillHtml(rawSector) {
+    const norm = String(rawSector || "").trim().toUpperCase();
+    const css = SECTOR_CSS_MAP[norm];
+    if (!css) {
+      return `<span class="sector-pill" style="background:#EEEAE3; color:#6B6459;">${escapeHtml(rawSector || "—")}</span>`;
+    }
+    return `<span class="sector-pill" style="background:var(--c-${css}); color:var(--c-${css}-ink);">${escapeHtml(rawSector)}</span>`;
+  }
+
+  function backlogRowHtml(b) {
+    const planifHtml = b.sinPlanificacion
+      ? `<span class="planif-tag missing">⚠ Sin planificar</span>`
+      : `<span class="planif-tag">${escapeHtml(b.fechaPlanificacion)}</span>`;
+
+    const entregaLabel = b.urgencia === "sinFecha" ? "Sin fecha"
+      : b.urgencia === "vencido" ? "⛔ " + escapeHtml(b.fechaEntrega)
+      : b.urgencia === "proximo" ? "⚠ " + escapeHtml(b.fechaEntrega)
+      : escapeHtml(b.fechaEntrega);
+
+    return `
+      <tr class="${b.enExpedicion ? "expedicion-row" : ""}">
+        <td class="bk-ot">OT ${escapeHtml(b.ot)}</td>
+        <td>
+          <div class="bk-detalle">${escapeHtml(b.detalle || "—")}</div>
+          <div class="bk-cliente">${escapeHtml(b.cliente || "")}</div>
+        </td>
+        <td>${sectorPillHtml(b.sector)}</td>
+        <td>${escapeHtml(b.tareaARealizar || "—")}</td>
+        <td>${planifHtml}</td>
+        <td><span class="entrega-tag ${b.urgencia}">${entregaLabel}</span></td>
+      </tr>
+    `;
+  }
+
+  function backlogTableHtml(list) {
+    return `
+      <table class="backlog-table">
+        <thead>
+          <tr>
+            <th>OT</th>
+            <th>Detalle / Cliente</th>
+            <th>Sector</th>
+            <th>Tarea a realizar</th>
+            <th>Planificación</th>
+            <th>Entrega</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(backlogRowHtml).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderBacklog(backlog) {
+    if (backlog.length === 0) {
+      backlogZone.innerHTML = `<div class="state-panel">No hay OTs pendientes cargadas.</div>`;
+      return;
+    }
+
+    const expedicion = backlog.filter(b => b.enExpedicion);
+    const resto = backlog.filter(b => !b.enExpedicion);
+
+    let html = "";
+
+    if (expedicion.length > 0) {
+      html += `
+        <div class="backlog-section-title expedicion">🚚 Listos para entregar — Expedición (${expedicion.length})</div>
+        ${backlogTableHtml(expedicion)}
+      `;
+    }
+
+    html += `
+      <div class="backlog-section-title">Resto de OTs pendientes, ordenadas por fecha de entrega (${resto.length})</div>
+      ${backlogTableHtml(resto)}
+    `;
+
+    backlogZone.innerHTML = html;
   }
 
   function renderFeed(updates) {
