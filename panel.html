@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google" content="notranslate">
 <title>Panel del día — Taller RL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -604,6 +605,21 @@
     }
   }
 
+  // Tareas y sectores que no se muestran en la pestaña Entregas: ya no aportan
+  // seguimiento de plazos (informe/finalizado son cierres administrativos).
+  const TAREAS_OCULTAS_ENTREGAS = ["INFORME", "FINALIZADO"];
+  const SECTORES_OCULTOS_ENTREGAS = ["FINALIZADO"];
+
+  function filterBacklog(backlogRaw) {
+    return backlogRaw.filter(b => {
+      const tarea = String(b.tareaARealizar || "").trim().toUpperCase();
+      const sector = String(b.sector || "").trim().toUpperCase();
+      if (TAREAS_OCULTAS_ENTREGAS.indexOf(tarea) !== -1) return false;
+      if (SECTORES_OCULTOS_ENTREGAS.indexOf(sector) !== -1) return false;
+      return true;
+    });
+  }
+
   function renderStats() {
     if (!lastPayload) return;
     if (activeTab === "ronda") {
@@ -616,7 +632,7 @@
       statUpdated.textContent = updatedCount;
       statPending.textContent = items.length - updatedCount;
     } else {
-      const backlog = lastPayload.backlog || [];
+      const backlog = filterBacklog(lastPayload.backlog || []);
       const vencidas = backlog.filter(b => b.urgencia === "vencido").length;
       const proximas = backlog.filter(b => b.urgencia === "proximo").length;
       statTotalLabel.textContent = "OTs pendientes";
@@ -745,7 +761,9 @@
     `;
   }
 
-  function renderBacklog(backlog) {
+  function renderBacklog(backlogRaw) {
+    const backlog = filterBacklog(backlogRaw);
+
     if (backlog.length === 0) {
       backlogZone.innerHTML = `<div class="state-panel">No hay OTs pendientes cargadas.</div>`;
       return;
